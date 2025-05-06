@@ -1,14 +1,14 @@
-const express = require('express');
-const axios = require('axios');
-const qs = require('qs');
-require('dotenv').config();
-const fs = require('fs');
-const path = require('path');
+const express = require('express'); // For creating the server
+const axios = require('axios'); // For making HTTP requests
+const qs = require('qs'); // For query string parsing
+require('dotenv').config(); // For loading environment variables from .env file
+const fs = require('fs'); // For file system operations
+const path = require('path'); // For handling file paths
 const https = require('https'); // For handling HTTPS requests
-const multer = require('multer');
+const multer = require('multer'); // For handling file uploads
 const upload = multer({ dest: 'uploads/' }); // Folder where uploads are temporarily stored
 
-const app = express();
+const app = express(); 
 const PORT = 3000;
 
 // external CSS and JS files
