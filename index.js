@@ -69,7 +69,7 @@ app.get('/generate', async (req, res) => {
       <img src="${imageUrl}" alt="Generated Image" class="generated-image"/><br><br>
       <div class="content">
         <a href="/">Start over</a> |
-        <a href="/?prompt=${encodeURIComponent(prompt)}">Edit the prompt</a> |
+        <a href="/?prompt=${encodeURIComponent(prompt)}">Edit the prompt</a><br>
         <a href="/generate?prompt=${encodeURIComponent(prompt)}">Regenerate with the same prompt</a><br><br>
         <a href="/download?imageUrl=${encodeURIComponent(imageUrl)}">
           <button>Download Image</button>
