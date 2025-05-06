@@ -11,93 +11,48 @@ const upload = multer({ dest: 'uploads/' }); // Folder where uploads are tempora
 const app = express();
 const PORT = 3000;
 
+// external CSS and JS files
+app.use(express.static('public')); // Serve static files from the 'public' directory
+
 // Ensure the 'downloads' directory exists
 const downloadsDir = path.join(__dirname, 'downloads');
 if (!fs.existsSync(downloadsDir)) {
   fs.mkdirSync(downloadsDir);
 }
 
-// Serve the form to generate image
+// HTML wrapper with Adobe header
+const htmlWrapper = (bodyContent) => `
+  <html>
+    <head>
+      <title>Adobe Firefly Image Generator</title>
+      <link rel="stylesheet" href="/styles.css">
+    </head>
+    <body>
+      <header>
+        <img src="https://www.adobe.com/home/assets/adobe_wordmark_red.svg" alt="Adobe Logo" />
+      </header>
+      <main>
+        ${bodyContent}
+      </main>
+    </body>
+  </html>
+`;
+
+// Route to show form
 app.get('/', (req, res) => {
   const prompt = req.query.prompt || '';
-
-  res.send(`
-    <html>
-      <head>
-        <title>Adobe Firefly AI Image Generator</title>
-        <style>
-          body {
-            font-family: 'Source Sans Pro', sans-serif;
-            background-color: #f4f5f7;
-            margin: 0;
-            padding: 0;
-            color: #333;
-          }
-          h1 {
-            text-align: center;
-            color: #2c3e50;
-            font-size: 32px;
-            margin-top: 50px;
-          }
-          form {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-          }
-          textarea {
-            width: 100%;
-            height: 120px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            padding: 10px;
-            font-size: 16px;
-            box-sizing: border-box;
-            margin-bottom: 20px;
-            resize: none;
-          }
-          button {
-            background-color: #1a73e8;
-            color: #fff;
-            border: none;
-            padding: 12px 20px;
-            font-size: 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-          }
-          button:hover {
-            background-color: #155dcd;
-          }
-          a {
-            text-decoration: none;
-            color: #1a73e8;
-            font-weight: bold;
-          }
-          a:hover {
-            text-decoration: underline;
-          }
-          .content {
-            text-align: center;
-            margin-top: 40px;
-          }
-        </style>
-      </head>
-      <body>
-        <h1>Generate an AI Image</h1>
-        <form action="/generate" method="get">
-          <label for="prompt">Enter a prompt:</label><br>
-          <textarea id="prompt" name="prompt" required>${prompt}</textarea><br><br>
-          <button type="submit">Generate Image</button>
-        </form>
-      </body>
-    </html>
-  `);
+  const body = `
+    <h1>Generate a Firefly Image</h1>
+    <form action="/generate" method="get">
+      <label for="prompt">Enter a prompt:</label><br>
+      <textarea id="prompt" name="prompt" required>${prompt}</textarea><br><br>
+      <button type="submit">Generate Image</button>
+    </form>
+  `;
+  res.send(htmlWrapper(body));
 });
 
-// Route to generate image based on the prompt
+// Route to generate image
 app.get('/generate', async (req, res) => {
   const prompt = req.query.prompt;
 
@@ -108,63 +63,20 @@ app.get('/generate', async (req, res) => {
   try {
     const accessToken = await retrieveAccessToken();
     const imageUrl = await generateImage(accessToken, prompt);
-    res.send(`
-      <html>
-        <head>
-          <title>Generated Image</title>
-          <style>
-            body {
-              font-family: 'Source Sans Pro', sans-serif;
-              background-color: #f4f5f7;
-              color: #333;
-              text-align: center;
-            }
-            img {
-              max-width: 90%;
-              border-radius: 8px;
-              margin-top: 20px;
-              box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            }
-            .content {
-              margin-top: 30px;
-            }
-            button {
-              background-color: #1a73e8;
-              color: #fff;
-              border: none;
-              padding: 12px 20px;
-              font-size: 16px;
-              border-radius: 4px;
-              cursor: pointer;
-            }
-            button:hover {
-              background-color: #155dcd;
-            }
-            a {
-              text-decoration: none;
-              color: #1a73e8;
-              font-weight: bold;
-            }
-            a:hover {
-              text-decoration: underline;
-            }
-          </style>
-        </head>
-        <body>
-          <h1>Generated Image for Prompt:</h1>
-          <p><em>${prompt}</em></p>
-          <img src="${imageUrl}" alt="Generated Image"/><br><br>
-          <div class="content">
-            <a href="/">Start over</a> | 
-            <a href="/?prompt=${encodeURIComponent(prompt)}">Edit the prompt</a> | 
-            <a href="/generate?prompt=${encodeURIComponent(prompt)}">Regenerate with the same prompt</a><br><br>
-            <a href="/download?imageUrl=${encodeURIComponent(imageUrl)}">
-              <button>Download Image</button>
-            </a>
-          </div>
-        </body>
-      </html>
-    `);
+    const body = `
+      <h1>Firefly Generated Image for Prompt:</h1>
+      <p><em>${prompt}</em></p>
+      <img src="${imageUrl}" alt="Generated Image" class="generated-image"/><br><br>
+      <div class="content">
+        <a href="/">Start over</a> |
+        <a href="/?prompt=${encodeURIComponent(prompt)}">Edit the prompt</a> |
+        <a href="/generate?prompt=${encodeURIComponent(prompt)}">Regenerate with the same prompt</a><br><br>
+        <a href="/download?imageUrl=${encodeURIComponent(imageUrl)}">
+          <button>Download Image</button>
+        </a>
+      </div>
+    `;
+    res.send(htmlWrapper(body));
   } catch (error) {
     console.error(error);
     res.status(500).send('Error generating image');
