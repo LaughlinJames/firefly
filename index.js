@@ -55,6 +55,8 @@ app.get('/', (req, res) => {
 // Route to generate image
 app.get('/generate', async (req, res) => {
   const prompt = req.query.prompt;
+  let seed = req.query.seed || 'random'; // Default to 'random' if no seed is provided
+
 
   if (!prompt) {
     return res.status(400).send('Prompt is required');
@@ -62,7 +64,11 @@ app.get('/generate', async (req, res) => {
 
   try {
     const accessToken = await retrieveAccessToken();
-    const imageUrl = await generateImage(accessToken, prompt);
+    const responseData = await generateImage(accessToken, prompt, seed);
+    const imageUrl = responseData.outputs[0].image.url;
+    seed = responseData.outputs[0].seed;
+    console.log('Generated Image seed:', seed);
+
     const body = `
       <h1>Firefly Generated Image for Prompt:</h1>
       <p><em>${prompt}</em></p>
@@ -71,6 +77,7 @@ app.get('/generate', async (req, res) => {
         <a href="/">Start over</a> |
         <a href="/?prompt=${encodeURIComponent(prompt)}">Edit the prompt</a><br>
         <a href="/generate?prompt=${encodeURIComponent(prompt)}">Regenerate with the same prompt</a><br><br>
+        <a href="/generate?prompt=${encodeURIComponent(prompt)}&seed=${encodeURIComponent(seed)}">Generate images similar to this one</a><br><br>
         <a href="/download?imageUrl=${encodeURIComponent(imageUrl)}">
           <button>Download Image</button>
         </a>
@@ -166,7 +173,8 @@ async function generateImage(accessToken, prompt) {
   };
 
   const response = await axios.request(config);
-  return response.data.outputs[0].image.url;
+  console.log('Response:', response.data);
+  return response.data;
 }
 
 // Start the server
