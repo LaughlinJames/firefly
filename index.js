@@ -43,9 +43,13 @@ app.get('/', (req, res) => {
   const prompt = req.query.prompt || '';
   const body = `
     <h1>Generate a Firefly Image</h1>
-    <form action="/generate" method="get">
+    <form action="/generate" method="post" enctype="multipart/form-data">
       <label for="prompt">Enter a prompt:</label><br>
       <textarea id="prompt" name="prompt" required>${prompt}</textarea><br><br>
+      
+      <label for="referenceImage">Add a reference image:</label><br>
+      <input type="file" id="referenceImage" name="referenceImage" accept="image/*"><br><br>
+
       <button type="submit">Generate Image</button>
     </form>
   `;
@@ -53,10 +57,9 @@ app.get('/', (req, res) => {
 });
 
 // Route to generate image
-app.get('/generate', async (req, res) => {
-  const prompt = req.query.prompt;
-  let seed = req.query.seed || 'random'; // Default to 'random' if no seed is provided
-
+app.post('/generate', upload.single('referenceImage'), async (req, res) => {
+  const prompt = req.body.prompt;
+  const referenceImage = req.file; // Contains uploaded file info, if any
 
   if (!prompt) {
     return res.status(400).send('Prompt is required');
@@ -64,19 +67,19 @@ app.get('/generate', async (req, res) => {
 
   try {
     const accessToken = await retrieveAccessToken();
-    const responseData = await generateImage(accessToken, prompt, seed);
+    const responseData = await generateImage(accessToken, prompt);
     const imageUrl = responseData.outputs[0].image.url;
-    seed = responseData.outputs[0].seed;
+    const seed = responseData.outputs[0].seed;
     console.log('Generated Image seed:', seed);
 
     const body = `
       <h1>Firefly Generated Image for Prompt:</h1>
       <p><em>${prompt}</em></p>
+      ${referenceImage ? `<p>Reference image uploaded: ${referenceImage.originalname}</p>` : ''}
       <img src="${imageUrl}" alt="Generated Image" class="generated-image"/><br><br>
       <div class="content">
         <a href="/">Start over</a> |
         <a href="/?prompt=${encodeURIComponent(prompt)}">Edit the prompt</a><br>
-        <a href="/generate?prompt=${encodeURIComponent(prompt)}">Regenerate with the same prompt</a><br><br>
         <a href="/generate?prompt=${encodeURIComponent(prompt)}&seed=${encodeURIComponent(seed)}">Generate images similar to this one</a><br><br>
         <a href="/download?imageUrl=${encodeURIComponent(imageUrl)}">
           <button>Download Image</button>
@@ -89,6 +92,40 @@ app.get('/generate', async (req, res) => {
     res.status(500).send('Error generating image');
   }
 });
+
+app.get('/generate', async (req, res) => {
+  const prompt = req.query.prompt;
+  const seed = req.query.seed || 'random';
+
+  if (!prompt) {
+    return res.status(400).send('Prompt is required');
+  }
+
+  try {
+    const accessToken = await retrieveAccessToken();
+    const responseData = await generateImage(accessToken, prompt, seed);
+    const imageUrl = responseData.outputs[0].image.url;
+
+    const body = `
+      <h1>Firefly Generated Image for Prompt:</h1>
+      <p><em>${prompt}</em></p>
+      <img src="${imageUrl}" alt="Generated Image" class="generated-image"/><br><br>
+      <div class="content">
+        <a href="/">Start over</a> |
+        <a href="/?prompt=${encodeURIComponent(prompt)}">Edit the prompt</a><br>
+        <a href="/generate?prompt=${encodeURIComponent(prompt)}&seed=${encodeURIComponent(seed)}">Generate images similar to this one</a><br><br>
+        <a href="/download?imageUrl=${encodeURIComponent(imageUrl)}">
+          <button>Download Image</button>
+        </a>
+      </div>
+    `;
+    res.send(htmlWrapper(body));
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error generating image');
+  }
+});
+
 
 // Route to handle image download
 app.get('/download', async (req, res) => {
