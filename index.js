@@ -68,6 +68,7 @@ app.post('/generate', upload.single('referenceImage'), async (req, res) => {
   try {
     const accessToken = await retrieveAccessToken();
     const responseData = await generateImage(accessToken, prompt);
+    // console.log('Access Token:', accessToken);
     const imageUrl = responseData.outputs[0].image.url;
     const seed = responseData.outputs[0].seed;
     console.log('Generated Image seed:', seed);
@@ -103,6 +104,7 @@ app.get('/generate', async (req, res) => {
 
   try {
     const accessToken = await retrieveAccessToken();
+    console.log('Access Token:', accessToken);
     const responseData = await generateImage(accessToken, prompt, seed);
     const imageUrl = responseData.outputs[0].image.url;
 
@@ -210,7 +212,7 @@ async function generateImage(accessToken, prompt) {
   };
 
   const response = await axios.request(config);
-  console.log('Response:', response.data);
+  // console.log('Response:', response.data);
   return response.data;
 }
 
